@@ -172,6 +172,7 @@ void decode()
 #define unknown_class() do { printf("ERROR: unknown order class %02o for order %03o, abort\n", cls, ord); halt = true; } while (0)
 #define unknown_variation() do { printf("ERROR: unknown order variation %01o for order %03o, abort\n", var, ord); halt = true; } while (0)
 #define unknown_device() do { printf("ERROR: unknown device selected %01o.\n", dev); halt = true; } while (0)
+#define unimplemented_variation() do { printf("ERROR: unimplemented order variation %01o for order %03o, abort\n", var, ord); } while (0)
 
 	switch (cls)
 	{
@@ -258,9 +259,53 @@ void decode()
 			a = 0; n = memory[adr]; a += -n; break;
 			break;
 
+		case 02: // instr("rav"); // reset add absolute value
+		case 06: // instr("av"); // add absolute value
+		case 07: // instr("sv"); // subtract absolute value
+			unimplemented_variation();
+			break;
+
 		default: unknown_variation();
 		}
 		overflow = (((a >> 39) & 1) != ((n >> 39) & 1));
+		advance();
+		break;
+
+	case 003: // multiplication
+		switch (var)
+		{
+		case 00: // instr("mr"); // multiply round - multiply and add plus one half
+		case 01: // instr("mnr"); // multipliy negatively and round
+		case 02: // instr("m"); // multiply
+		case 03: // instr("mn"); // multiply negatively
+		case 06: // instr("ma"); // multiply and accumulate
+		case 07: // instr("mna"; // multiply negatively and accumulate
+		case 04: // instr("mb"); // multiply - both round and accumulate
+		case 05: // instr("mnb"); // multiply negatively - both round and accumulate
+
+		case 02: // instr("rav"); // reset add absolute value
+		case 06: // instr("av"); // add absolute value
+		case 07: // instr("sv"); // subtract absolute value
+			unimplemented_variation();
+			break;
+
+		default: unknown_variation();
+		}
+		advance();
+		break;
+
+	case 004: // division
+		switch (var)
+		{
+		case 00: // instr("ds"); // divide with short dividend
+		case 01: // instr("dns"); // divide negatively with short dividend
+		case 04: // instr("d"); // divide
+		case 05: // instr("dn"); // divide negatively
+			unimplemented_variation();
+			break;
+
+		default: unknown_variation();
+		}
 		advance();
 		break;
 
@@ -296,6 +341,25 @@ void decode()
 		advance();
 		break;
 
+	case 006: // multiplier quotient to accumualtor and memory operations
+		switch (var)
+		{
+		case 00: // instr("stq");
+		case 01: // instr("snq");
+		case 02: // instr("svq");
+		case 03: // instr("snv");
+		case 04: // instr("aqs");
+		case 05: // instr("sqs");
+		case 06: // instr("avs");
+		case 07: // instr("svs");
+			unimplemented_variation();
+			break;
+
+		default: unknown_variation();
+		}
+		advance();
+		break;
+
 	case 007: // shift operations
 		switch (var)
 		{
@@ -308,6 +372,15 @@ void decode()
 			a |= (mq >> 39) & 1;
 			mq <<= 1;
 			mq |= tmp;
+			break;
+
+		case 04: // instr("srm");
+		case 01: // instr("clc");
+		case 02: // instr("lrc");
+		case 03: // instr("llc");
+		case 06: // instr("lrh");
+		case 07: // instr("llh");
+			unimplemented_variation();
 			break;
 
 
@@ -341,6 +414,24 @@ void decode()
 		case 06: instr("ej"); // eject page from printer
 			break;
 
+		case 04: // instr("dis"); // display
+		case 05: // instr("hut"); // hoot
+			unimplemented_variation();
+			break;
+
+		default: unknown_variation();
+		}
+		advance();
+		break;
+
+	case 011: // drum operations
+		switch (var)
+		{
+		case 00: // instr("rd"); // read block of data from drum to store
+		case 01: // instr("wd"); // write block of data from store to drum
+			unimplemented_variation();
+			break;
+
 		default: unknown_variation();
 		}
 		advance();
@@ -355,6 +446,11 @@ void decode()
 		case 03: instr("zta"); // zero to accumulator
 			a = 0; break;
 
+		case 04: // instr("pi"); // positive intersection
+		case 05: // instr("ni"); // negative intersection
+		case 06: // instr("pmi"); // conditional positive intersection
+		case 07: // instr("nmi"); // conditional negative intersection
+
 		default: unknown_variation();
 		}
 		advance();
@@ -368,6 +464,16 @@ void decode()
 
 		case 04: instr("htr"); // unconditional halt and transfer right
 			nia = adr; lr = 1; halt = true; break;
+
+		case 01: // instr("h1l"); // halt condition by switch h1 and transfer left
+		case 02: // instr("h2l"); // halt condition by switch h2 and transfer left
+		case 03: // instr("h3l"); // halt condition by switch h3 and transfer left
+		case 05: // instr("h1r"); // halt condition by switch h1 and transfer right
+		case 06: // instr("h2r"); // halt condition by switch h2 and transfer right
+		case 07: // instr("h3r"); // halt condition by switch h3 and transfer right
+			unimplemented_variation();
+			advance();
+			break;
 
 		default: unknown_variation();
 		}
